@@ -1,0 +1,45 @@
+{
+  "window": {
+    "width": 1000,
+    "height": 700,
+    "title": "Pyraster3D",
+    "fps_cap": 0
+  },
+  "renderer": {
+    "fov_degrees": 70.0,
+    "z_near": 0.1,
+    "z_far": 200.0,
+    "shadows": true,
+    "shadow_map_size": 512,
+    "raytracing": false,
+    "max_bounces": 1,
+    "raytrace_shadows": false,
+    "raytrace_ao": false,
+    "edge_depth_sampling": false,
+    "cull_backface": true,
+    "ambient": [0.22, 0.22, 0.26],
+    "sun_direction": [0.4, 0.8, 0.45],
+    "sun_color": [1.0, 0.98, 0.94]
+  },
+  "camera_defaults": {
+    "fov_degrees": 70.0,
+    "speed": 0.25,
+    "mouse_sensitivity": 0.003,
+    "tpp_distance": 6.0,
+    "tpp_height_offset": 1.5
+  },
+  "threading": {
+    "workers": 2,
+    "async_scene_compile": true,
+    "async_shadow": true
+  },
+  "editor": {
+    "enabled": true,
+    "grid": true,
+    "grid_size": 1.0,
+    "snap_translate": 0.5,
+    "snap_rotate": 15.0,
+    "show_fps": true,
+    "default_sun_direction": [0.4, 0.8, 0.45]
+  }
+}

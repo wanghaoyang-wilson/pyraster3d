@@ -1,0 +1,69 @@
+{
+  "name": "sample_level",
+  "version": 1,
+  "camera": {
+    "mode": "fpp",
+    "position": [0.0, 2.0, -10.0],
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "tpp_distance": 6.0,
+    "tpp_height_offset": 1.5
+  },
+  "scene": {
+    "name": "sample_level",
+    "ambient": [0.22, 0.22, 0.26],
+    "sun_direction": [0.5, 0.8, 0.4],
+    "sun_color": [1.0, 0.98, 0.94],
+    "sky_color": [30, 34, 44],
+    "entities": [
+      {
+        "name": "ground",
+        "model": "plane",
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": [14, 1, 14],
+        "solid": true,
+        "cast_shadow": true,
+        "receive_shadow": true,
+        "visible": true,
+        "material": { "type": "solid", "color": [70, 90, 70], "alpha": 1.0, "reflectivity": 0.0 }
+      },
+      {
+        "name": "cube_1",
+        "model": "cube",
+        "position": [0, 1, 5],
+        "rotation": [0, 0.4, 0],
+        "scale": [1, 1, 1],
+        "solid": true,
+        "cast_shadow": true,
+        "receive_shadow": true,
+        "visible": true,
+        "material": { "type": "solid", "color": [210, 80, 70], "alpha": 1.0, "reflectivity": 0.25 }
+      },
+      {
+        "name": "sphere_1",
+        "model": "sphere",
+        "position": [3.2, 1.2, 4.5],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1],
+        "solid": true,
+        "cast_shadow": true,
+        "receive_shadow": true,
+        "visible": true,
+        "material": { "type": "solid", "color": [80, 140, 200], "alpha": 1.0, "reflectivity": 0.0 }
+      },
+      {
+        "name": "cylinder_1",
+        "model": "cylinder",
+        "position": [-3, 1, 5],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1],
+        "solid": true,
+        "cast_shadow": true,
+        "receive_shadow": true,
+        "visible": true,
+        "material": { "type": "solid", "color": [160, 150, 70], "alpha": 1.0, "reflectivity": 0.0 }
+      }
+    ]
+  }
+}
