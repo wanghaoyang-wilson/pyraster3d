@@ -25,8 +25,9 @@ DEFAULT_CONFIG = {
         "max_bounces": 1,
         "raytrace_shadows": False,
         "raytrace_ao": False,
-        "edge_depth_sampling": False,  # 仅边缘深度采样优化   true
+        "edge_depth_sampling": True,  # 仅边缘深度采样优化
         "cull_backface": True,
+        "backend": "pygame",         # 渲染后端："pygame" | "direct2d"(Windows-only, 预留)
         "ambient": [0.22, 0.22, 0.26],
         "sun_direction": [0.4, 0.8, 0.45],
         "sun_color": [1.0, 0.98, 0.94],
@@ -51,6 +52,18 @@ DEFAULT_CONFIG = {
         "snap_rotate": 15.0,
         "show_fps": True,
         "default_sun_direction": [0.4, 0.8, 0.45],
+    },
+    "physics": {
+        "enabled": True,              # 物理引擎总开关
+        "player_radius": 0.4,         # 玩家胶囊体半径
+        "player_height": 1.8,         # 玩家胶囊体高度
+        "eye_height": 1.6,            # 相机眼高（玩家中心到眼睛）
+        "gravity": -20.0,             # 重力（-Y）
+        "jump_speed": 6.0,            # 跳跃初速度
+        "move_speed": 4.0,            # 水平移动速度
+        "broadphase_radius": 20.0,    # 宽相筛选半径（单位）
+        "broadphase_interval": 60,    # 每多少游戏刻刷新一次附近碰撞体
+        "substeps": 4,                # 每帧细分时间步数（防穿透）
     },
 }
 

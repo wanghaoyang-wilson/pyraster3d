@@ -26,6 +26,7 @@ from .scene import Scene, Entity
 from .tasks import AsyncWorker, AsyncSceneCompiler
 from .ui import UILayer, Label
 from .primitives import build_primitive
+from .physics import PhysicsWorld, CharacterController, add_collider, Collider
 
 
 class App:
@@ -80,6 +81,11 @@ class App:
         self.editor = Editor(self, enabled=self.config["editor"].get("enabled", True))
         self.editor.active = False
 
+        # 物理引擎（玩家胶囊体 + 物理世界）
+        self.player: Optional[CharacterController] = None
+        self.physics: Optional[PhysicsWorld] = None
+        self._init_physics()
+
         # 运行状态
         self.running = False
         self.on_update: Optional[Callable[[float], None]] = None
@@ -99,8 +105,10 @@ class App:
     # ------------------------------------------------------------------ #
     def _build_default_scene(self):
         ground = Entity(model=build_primitive("plane"), name="ground",
-                        position=(0, 0, 0), scale=(14, 1, 14),
+                        position=(0, 0, 0), scale=(40, 1, 40),
                         material=SolidColorMaterial((66, 84, 66)))
+        # 地面挂 Block 碰撞体（供物理系统承载玩家）
+        add_collider(ground, Collider.BLOCK)
         cube = Entity(model=build_primitive("cube"), name="cube_1",
                       position=(0, 1, 6), rotation=(0, 0.6, 0),
                       material=SolidColorMaterial((198, 88, 78)))
@@ -111,8 +119,42 @@ class App:
         for e in (ground, cube, sphere, cyl):
             self.scene.add(e)
 
+    # ------------------------------------------------------------------ #
+    # 物理
+    # ------------------------------------------------------------------ #
+    def _init_physics(self):
+        pcfg = self.config.get("physics", {})
+        if not pcfg.get("enabled", True):
+            return
+        start = self.camera.position if self.camera is not None else (0, 1.5, -8)
+        self.player = CharacterController(
+            position=start,
+            radius=pcfg.get("player_radius", 0.4),
+            height=pcfg.get("player_height", 1.8),
+            eye_height=pcfg.get("eye_height", 1.6),
+            gravity=pcfg.get("gravity", -20.0),
+            jump_speed=pcfg.get("jump_speed", 6.0),
+            move_speed=pcfg.get("move_speed", 4.0),
+        )
+        self.physics = PhysicsWorld(
+            self.scene, self.player,
+            broadphase_radius=pcfg.get("broadphase_radius", 20.0),
+            broadphase_interval=pcfg.get("broadphase_interval", 60),
+            substeps=pcfg.get("substeps", 4),
+        )
+
+    def _read_physics_input(self):
+        """读取 WASD + 空格输入，供物理步进使用。"""
+        keys = self.pygame.key.get_pressed()
+        fwd = (1 if keys[self.pygame.K_w] else 0) - (1 if keys[self.pygame.K_s] else 0)
+        rgt = (1 if keys[self.pygame.K_d] else 0) - (1 if keys[self.pygame.K_a] else 0)
+        jump = bool(keys[self.pygame.K_SPACE])
+        return (fwd, rgt), jump
+
     def set_scene(self, scene: Scene):
         self.scene = scene
+        if self.physics is not None:
+            self.physics.set_scene(scene)
         self.request_rebuild()
 
     def request_rebuild(self):
@@ -203,7 +245,6 @@ class App:
             return
         if isinstance(self.camera, TPPCamera):
             self.camera.update(dt)
-            # 鼠标拖拽环绕
             if pygame.mouse.get_pressed()[0]:
                 dx, dy = pygame.mouse.get_rel()
                 self.camera.orbit(dx, dy)
@@ -211,7 +252,14 @@ class App:
         # 第一人称：锁定鼠标
         if isinstance(self.camera, FPPCamera):
             self.camera.lock_mouse(pygame, True)
-            self.camera.update_input(pygame, dt)
+            if self.physics is not None and self.player is not None:
+                # 物理驱动模式：仅鼠标视角；水平移动/重力/跳跃由 PhysicsWorld 处理
+                if self.camera.mouse_locked:
+                    dx, dy = pygame.mouse.get_rel()
+                    if dx or dy:
+                        self.camera.look_delta(dx, dy)
+            else:
+                self.camera.update_input(pygame, dt)
 
     def _toggle_camera(self):
         if isinstance(self.camera, TPPCamera):
@@ -270,6 +318,14 @@ class App:
 
             # 相机输入
             self._update_camera(dt)
+
+            # 物理步进（第一人称非编辑器时驱动相机跟随玩家）
+            if self.physics is not None and self.player is not None and not self.editor.active:
+                move_input, jump = self._read_physics_input()
+                self.physics.step(dt, move_input=move_input, jump=jump,
+                                  yaw=self.camera.yaw)
+                if isinstance(self.camera, FPPCamera):
+                    self.camera.position = list(self.player.eye_position())
 
             # 交互事件分发（UI + 3D 拾取）
             self._dispatch_interaction(events)

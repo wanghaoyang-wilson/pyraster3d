@@ -27,11 +27,13 @@ pyraster3d/
 ├── tasks.py         工作线程池 + 异步场景编译（双缓冲切换）
 ├── config.py        引擎配置（JSON，深合并）
 ├── levelio.py       关卡文件（JSON）读写
+├── physics.py       轻量物理引擎（AABB 碰撞体 / 胶囊体玩家 / 重叠事件）
 └── editor.py        基础关卡编辑器
-examples/main.py     综合演示
+direct2d/            Direct2D 渲染后端（Windows-only，本轮未在 Linux 验证）
+examples/main.py     综合演示（含物理）
 engine_config.json   默认引擎配置
 levels/sample_level.json  示例关卡
-tests/smoke_test.py  无头冒烟测试
+tests/smoke_test.py  无头冒烟测试（26 项）
 ```
 
 ## 安装依赖
@@ -82,6 +84,7 @@ app.run(update_func=update)
 | 按键 | 作用 |
 |---|---|
 | `W A S D` | 移动（第一人称 / 编辑器自由相机） |
+| `空格` | 跳跃（第一人称物理模式） |
 | `Q` / `E` | 上下移动 |
 | `F1` | 开关关卡编辑器 |
 | `F2` | 切换 第一人称 / 第三人称 相机 |
@@ -106,6 +109,32 @@ app.run(update_func=update)
 
 `App` 内置 `AsyncSceneCompiler`（基于工作线程池）：OBJ 加载、BVH 构建、阴影贴图重建均在后台执行；主线程在帧首 `apply_ready()` 原子切换就绪数据（双缓冲），**不阻塞渲染**。主线程绝不直接修改正在渲染的实体，避免竞态。
 
+## 物理引擎
+
+`physics.py` 提供轻量物理（原型阶段，后续内核转译到 C++/GPU 时保持接口不变）：
+
+- `AABBCollider`（Block / Overlap）：给实体挂碰撞体，`add_collider(entity, mode, ...)`。
+- `CharacterController`：胶囊体玩家，重力 / 跳跃 / 落地 / 水平移动。
+- `PhysicsWorld`：**宽相**（以玩家为中心 20 单位，每 60 游戏刻刷新附近碰撞体候选）+ **窄相**（胶囊-AABB，细分时间步防穿透）。
+- 重叠对差分触发事件：`on_begin_overlap` / `on_end_overlap` / `on_hit`（挂到碰撞体实体或玩家上）。
+
+```python
+add_collider(ground, "block")                    # 地面阻挡
+ball_collider = add_collider(ball, "overlap")    # 触发区
+def enter(other): print("进入触发区", other.position)
+ball.on_begin_overlap = enter
+```
+
+第一人称模式下，物理驱动相机跟随玩家（`App.player` / `App.physics`）；编辑器模式下物理暂停。
+
+## UI 主题
+
+`ui.py` 新增 `UITheme` 主题系统（模块级 `theme` 单例，`set_theme()` 切换）。Button 支持圆角 + 边框 + 悬停/按下态，Panel 支持半透明 + 边框 + 标题栏，Label 支持阴影。现有 API 完全向后兼容。
+
+## Direct2D 后端（Windows-only）
+
+`direct2d/` 提供「纯 Python 软光栅 + C++/GPU 呈现」的窗口输出后端：Python 侧把帧缓存写为 BGRA（文件/共享内存），C++ 程序 `direct2d_presenter.exe` 用 Direct2D/D3D11 呈现。**注意：当前开发环境是 Linux，C++ 部分无法编译/运行验证，仅交付参考代码**；Python 侧的 `write_frame_file()` 已纳入冒烟测试，且非 Windows 环境自动回退 `pygame` 后端。
+
 ## 配置文件 `engine_config.json`
 
 ```jsonc
@@ -115,12 +144,17 @@ app.run(update_func=update)
     "fov_degrees": 70, "z_near": 0.1, "z_far": 200,
     "shadows": true, "shadow_map_size": 512,
     "raytracing": false, "max_bounces": 1,
-    "edge_depth_sampling": true, "cull_backface": true,
+    "edge_depth_sampling": true, "cull_backface": true, "backend": "pygame",
     "ambient": [0.22,0.22,0.26], "sun_direction": [0.4,0.8,0.45], "sun_color": [1,0.98,0.94]
   },
   "camera_defaults": { "fov_degrees": 70, "speed": 0.25, "mouse_sensitivity": 0.003 },
   "threading": { "workers": 2, "async_scene_compile": true, "async_shadow": true },
-  "editor": { "enabled": true, "grid": true, "snap_translate": 0.5, "snap_rotate": 15, "show_fps": true }
+  "editor": { "enabled": true, "grid": true, "snap_translate": 0.5, "snap_rotate": 15, "show_fps": true },
+  "physics": {
+    "enabled": true, "player_radius": 0.4, "player_height": 1.8, "eye_height": 1.6,
+    "gravity": -20, "jump_speed": 6, "move_speed": 4,
+    "broadphase_radius": 20, "broadphase_interval": 60, "substeps": 4
+  }
 }
 ```
 
@@ -137,4 +171,4 @@ JSON，含关卡名、相机生成信息、光照/天空设置与实体列表（
 
 ## 验证
 
-`python tests/smoke_test.py`：11 项无头测试全部通过——帧缓存输出、关卡读写往返、BVH 求交、相机拾取、阴影贴图采样、阴影/反射射线。
+`python tests/smoke_test.py`：26 项无头测试全部通过——帧缓存输出、关卡读写往返、BVH 求交、相机拾取、阴影贴图采样、阴影/反射射线、物理引擎（落地/跳跃/Block 阻挡/Overlap 事件/宽相筛选）、UI 主题、配置项、Direct2D Python 桥接。

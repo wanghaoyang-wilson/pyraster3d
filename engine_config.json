@@ -15,8 +15,9 @@
     "max_bounces": 1,
     "raytrace_shadows": false,
     "raytrace_ao": false,
-    "edge_depth_sampling": false,
+    "edge_depth_sampling": true,
     "cull_backface": true,
+    "backend": "pygame",
     "ambient": [0.22, 0.22, 0.26],
     "sun_direction": [0.4, 0.8, 0.45],
     "sun_color": [1.0, 0.98, 0.94]
@@ -41,5 +42,17 @@
     "snap_rotate": 15.0,
     "show_fps": true,
     "default_sun_direction": [0.4, 0.8, 0.45]
+  },
+  "physics": {
+    "enabled": true,
+    "player_radius": 0.4,
+    "player_height": 1.8,
+    "eye_height": 1.6,
+    "gravity": -20.0,
+    "jump_speed": 6.0,
+    "move_speed": 4.0,
+    "broadphase_radius": 20.0,
+    "broadphase_interval": 60,
+    "substeps": 4
   }
 }

@@ -11,12 +11,13 @@ Pyraster3D — 基于 Pygame 的软光栅 3D 引擎库
 - 阴影贴图
 - 多线程异步场景编译（BVH / 阴影后台重建）
 - UI 系统 + Hover/Hit/Clicked 交互事件
+- 物理引擎（AABB 碰撞体 / 胶囊体玩家 / 重叠事件）
 - 关卡编辑器 + 关卡配置文件（JSON）读写
 - 引擎配置文件（JSON）
 """
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # 核心入口
 from .app import App
@@ -57,6 +58,11 @@ from .tasks import AsyncWorker, AsyncSceneCompiler
 # 关卡编辑器
 from .editor import Editor
 
+# 物理引擎
+from .physics import (Collider, AABBCollider, add_collider,
+                      CharacterController, PhysicsWorld,
+                      capsule_intersects_aabb, aabb_overlap)
+
 __all__ = [
     "App", "Scene", "Entity", "entity_from_dict",
     "Camera", "FPPCamera", "TPPCamera",
@@ -68,4 +74,6 @@ __all__ = [
     "Interactive", "HitInfo", "UIElement", "Label", "Button", "Panel", "UILayer",
     "save_level", "load_level", "load_config", "save_config", "DEFAULT_CONFIG",
     "AsyncWorker", "AsyncSceneCompiler", "Editor",
+    "Collider", "AABBCollider", "add_collider", "CharacterController",
+    "PhysicsWorld", "capsule_intersects_aabb", "aabb_overlap",
 ]

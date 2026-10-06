@@ -20,7 +20,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pyraster3d import (App, Entity, FPPCamera, TPPCamera, SolidColorMaterial,
-                        TextureMaterial, HitInfo, Button, Label, build_primitive)
+                        TextureMaterial, HitInfo, Button, Label, build_primitive,
+                        add_collider, Collider)
 
 
 def main():
@@ -47,6 +48,28 @@ def main():
     for e in (cube, ball, pillar):
         app.scene.add(e)
 
+    # ---- 物理演示：给物体挂碰撞体 ----
+    add_collider(cube, Collider.BLOCK)
+    add_collider(pillar, Collider.BLOCK)
+    add_collider(ball, Collider.OVERLAP)
+
+    def ball_overlap_enter(other):
+        print(f"[Overlap 进入] 玩家触碰 {ball.name}，玩家位置={other.position.tolist()}")
+        ball.material.color = (120, 230, 120)
+
+    def ball_overlap_exit(_other):
+        print(f"[Overlap 离开] 离开 {ball.name}")
+        ball.material.color = (80, 140, 200)
+
+    def cube_hit(_other):
+        print(f"[Hit] 撞到 {cube.name}（被阻挡）")
+
+    ball.on_begin_overlap = ball_overlap_enter
+    ball.on_end_overlap = ball_overlap_exit
+    cube.on_hit = cube_hit
+
+    app.physics._refresh_nearby()
+
     # 交互事件演示
     def cube_clicked(hit: HitInfo):
         print(f"[Clicked] {hit.entity.name} 命中点={hit.world_pos}")
@@ -62,20 +85,22 @@ def main():
     cube.on_hover = cube_hover
     cube.on_mouse_exit = cube_exit
 
-    # 第一人称相机（默认，相机朝 +Z，物体放在前方 z>0）
+    # 第一人称相机
     app.camera = FPPCamera(position=(0, 2.0, -10.0),
                            fov_degrees=app.config["renderer"]["fov_degrees"])
 
-    # UI 示例
+    # UI 示例（新主题风格）
     ui = app.ui
-    tip = Label("F1 编辑器 / F2 切相机 / 点击立方体 / WASD 移动", (14, 40, 400, 24),
-                name="tip", color=(200, 210, 220))
+    tip = Label("F1 编辑器 / F2 切相机 / 点击立方体 / WASD 移动 / 空格跳跃",
+                (14, 40, 460, 24), name="tip", color=(200, 210, 220), shadow=True)
     ui.add(tip)
 
-    btn_light = Button("切换阴影(T)", (14, 70, 140, 30), name="btn_light",
-                       bg=(50, 90, 60), hover=(70, 120, 80))
-    btn_rt = Button("切换光追(G)", (160, 70, 140, 30), name="btn_rt",
-                    bg=(120, 70, 60), hover=(160, 95, 80))
+    hud = Label("物理: 待机", (14, 88, 300, 22), name="phys_hud",
+                color=(160, 230, 170), shadow=True)
+    ui.add(hud)
+
+    btn_light = Button("切换阴影(T)", (14, 70, 140, 30), name="btn_light")
+    btn_rt = Button("切换光追(G)", (160, 70, 140, 30), name="btn_rt")
 
     def toggle_shadow(hit):
         app.renderer.enable_shadows = not app.renderer.enable_shadows
@@ -91,18 +116,21 @@ def main():
     ui.add(btn_light)
     ui.add(btn_rt)
 
-    # 运行时开关（键盘）
     def update(dt):
         keys = app.pygame.key.get_pressed()
         if keys[app.pygame.K_t] and app.pygame.key.get_mods() & app.pygame.KMOD_CTRL:
             pass
-        # 让物体轻轻旋转，展示动态场景
         cube.rotation[1] += 0.6 * dt
         cube.set_transform(rotation=cube.rotation)
         ball.rotation[0] += 0.4 * dt
         ball.set_transform(rotation=ball.rotation)
+        if app.player is not None:
+            p = app.player
+            state = "地面" if p.grounded else "空中"
+            hud.text = (f"物理: {state}  位置={[round(v,1) for v in p.position]}  "
+                        f"速度y={p.velocity[1]:+.1f}")
+        app.physics._refresh_nearby() if app.physics is not None else None
 
-    # 按键切换（简单轮询一次）
     update.last_t = 0.0
     update.last_g = 0.0
 
