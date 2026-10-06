@@ -1,0 +1,33 @@
+# 无关项目 / 历史快照（不纳入本仓库）
+NeGameLuncher-Offical-OpenSouse-PY/
+mini-game-platform/
+mini-game-platform.zip
+pyraster3d_project.zip
+wechat_flask.py
+.tmp-tool-results/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.venv/
+venv/
+env/
+
+# 运行产物 / 帧缓存
+*.raw
+frame_*.raw
+*.log
+levels/my_level.json
+
+# Direct2D 编译产物（Windows，勿提交二进制）
+direct2d/direct2d_presenter.exe
+direct2d/*.obj
+direct2d/*.pdb
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+*.swp
+.DS_Store
